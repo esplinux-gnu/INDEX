@@ -1,0 +1,51 @@
+version: 2.1
+
+executors:
+  alpine:
+    docker:
+      - image: alpine:3.9
+    working_directory: ~/
+    environment:
+      VERSION: bootstrap
+      GHR_VERSION: v0.12.1
+
+jobs:
+  prepare:
+    executor: alpine
+    steps:
+      - run: apk add ca-certificates curl go git build-base
+      - checkout
+      - run: mkdir -p ~/workspace/tools/bin
+      - run: go mod init .
+      - run: go get github.com/tcnksm/ghr@$GHR_VERSION
+      - run: cp /root/go/bin/ghr ~/workspace/tools/bin
+      - run: cp build_index ~/workspace/tools/bin
+      - store_artifacts:
+          path: ~/workspace/tools
+      - persist_to_workspace:
+          root: ~/workspace
+          paths:
+            - tools
+
+  build:
+    executor: alpine
+    steps:
+      - run: apk add ca-certificates curl
+      - checkout
+      - attach_workspace:
+          at: ~/workspace
+      - run:
+          name: Build
+          command: |
+            mkdir ~/package
+            export PATH=~/workspace/tools/bin:$PATH
+            build_index gnu $VERSION > ~/package/gnu.txt
+            ghr $GHR_FLAGS -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ~/package
+
+workflows:
+  build:
+    jobs:
+      - prepare
+      - build:
+          requires:
+            - prepare
