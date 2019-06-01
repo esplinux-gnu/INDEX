@@ -41,7 +41,7 @@ jobs:
           command: |
             mkdir ~/package
             export PATH=~/workspace/tools/bin:$PATH
-            build_index gnu $VERSION > ~/package/gnu.txt
+            build_index gnu $VERSION > ~/package/INDEX.txt
             ghr $GHR_FLAGS -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ~/package
 
 workflows:
